@@ -5,6 +5,7 @@ import React, {
   useState,
   createContext,
   useContext,
+  useCallback,
 } from "react";
 import {
   IconArrowNarrowLeft,
@@ -47,6 +48,7 @@ export const CarouselApp = ({ items, initialScroll = 0 }: CarouselProps) => {
   const [startX, setStartX] = useState(0);
   const [initialScrollLeft, setInitialScrollLeft] = useState(0);
   const [hasMoved, setHasMoved] = useState(false);
+  const[handleClose, setHandleClose] = useState(() => () => {});
 
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export const CarouselApp = ({ items, initialScroll = 0 }: CarouselProps) => {
       carouselRef.current.scrollLeft = initialScroll;
       checkScrollability();
     }
-  }, [initialScroll]);
+  }, [initialScroll,handleClose],);
 
   const checkScrollability = () => {
     if (carouselRef.current) {
@@ -359,7 +361,7 @@ export const BlurImage = ({
         isLoading ? "blur-sm" : "blur-0",
         className,
       )}
-      onLoadingComplete={() => setLoading(false)}
+      onLoad={() => setLoading(false)}
       src={src}
       width={width}
       height={height}

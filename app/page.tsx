@@ -1,5 +1,5 @@
 "use client";
-import Carousel from "@/components/ui/carousel";
+//import Carousel from "@/components/ui/carousel";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {  Card } from "@/components/ui/apple-cards-carousel";
 import { IconHome, IconArrowLeft, IconInfoCircle, IconSettings, IconDatabase } from "@tabler/icons-react";
