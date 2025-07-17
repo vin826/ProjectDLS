@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id        String                 @id @default(uuid())
+  name           String
+  email          String
+  password_hash  String
+  role           Role
+  phone_number   BigInt?
+  created_at     DateTime
+  profile        User_Profile?
+  balances       UserCurrencyBalances[]
+  transactions   Transactions[]
+  registrations  TournamentRegistrations[]
+}
+
+model User_Profile {
+  user_id         String   @id
+  display_name    BigInt
+  bio             String?
+  profile_image_url String?
+  social_links    Json?
+  updated_at      DateTime
+  user            User     @relation(fields: [user_id], references: [user_id])
+}
+
+model Currencies {
+  currency_id  String    @id @default(uuid())
+  name         String
+  symbol       String
+  exchange_rate Decimal
+  created_at   DateTime
+  updated_at   DateTime
+  balances     UserCurrencyBalances[]
+  transactions Transactions[]
+  tournaments  Tournaments[]
+}
+
+model UserCurrencyBalances {
+  balance_id   String    @id @default(uuid())
+  user_id      String
+  currency_id  String
+  amount       Decimal
+  updated_at   DateTime
+  created_at   DateTime
+
+  user         User       @relation(fields: [user_id], references: [user_id])
+  currency     Currencies @relation(fields: [currency_id], references: [currency_id])
+}
+
+model Transactions {
+  transaction_id      String    @id @default(uuid())
+  user_id             String
+  currency_id         String
+  type                TransactionType
+  amount              Decimal
+  real_money_amount   Decimal?
+  status              TransactionStatus
+  description         String?
+  related_entity_id   String?
+  created_at          DateTime
+
+  user                User       @relation(fields: [user_id], references: [user_id])
+  currency            Currencies @relation(fields: [currency_id], references: [currency_id])
+  registration        TournamentRegistrations? @relation("PaymentTransaction")
+}
+
+model Tournaments {
+  tournament_id       String    @id @default(uuid())
+  name                String
+  description         String?
+  start_date          DateTime
+  end_date            DateTime
+  entry_fee_currency_id String
+  entry_fee_amount    Decimal
+  max_participants    Int
+  status              TournamentStatus
+  created_by          String
+  created_at          DateTime
+  updated_at          DateTime
+
+  currency            Currencies @relation(fields: [entry_fee_currency_id], references: [currency_id])
+  registrations       TournamentRegistrations[]
+}
+
+model TournamentRegistrations {
+  registration_id       String    @id @default(uuid())
+  user_id               String
+  tournament_id         String
+  payment_transaction_id String? @unique
+  registration_date     DateTime
+  status                RegistrationStatus
+  created_at            DateTime
+  updated_at            DateTime
+
+  user                  User       @relation(fields: [user_id], references: [user_id])
+  tournament            Tournaments @relation(fields: [tournament_id], references: [tournament_id])
+  payment_transaction   Transactions? @relation("PaymentTransaction", fields: [payment_transaction_id], references: [transaction_id])
+}
+
+model CarouselContent {
+  content_id     String   @id @default(uuid())
+  title          String
+  description    String?
+  image_url      String?
+  link_url       String?
+  order_index    Int
+  is_active      Boolean
+  created_by     String
+  created_at     DateTime
+  updated_at     DateTime
+  last_edited_by String?
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
