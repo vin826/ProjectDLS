@@ -84,11 +84,16 @@ export default function CarouselDemo() {
 
         {/* Content based on current view */}
         {currentView === 'frontend' ? (
-          <FrontendView slideData={slides.map(slide => ({
-            title: slide.title,
-            button: slide.button,
-            src: slide.src
-          }))} cards={appleCarouselItems} />
+          <FrontendView
+            slideData={slides.map(slide => ({
+              title: slide.title,
+              button: slide.button,
+              src: slide.src
+            }))}
+            cards={cards.map((card, index) => (
+              <Card key={card.id} card={card} index={index} />
+            ))}
+          />
         ) : (
           <BackendDashboard />
         )}
