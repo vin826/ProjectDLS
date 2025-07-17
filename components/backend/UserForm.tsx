@@ -1,62 +1,92 @@
 "use client";
 import { useState } from "react";
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
-
 interface UserFormProps {
-  onAddUser: (user: Omit<User, 'id'>) => void;
+  onAddUser: (user: {
+    name: string;
+    email: string;
+    role: 'ADMIN' | 'USER';
+    phone_number?: string;
+    password: string;
+  }) => void;
 }
 
 export default function UserForm({ onAddUser }: UserFormProps) {
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "User" });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: 'USER' as 'ADMIN' | 'USER',
+    phone_number: '',
+    password: ''
+  });
 
-  const handleSubmit = () => {
-    if (newUser.name && newUser.email) {
-      onAddUser(newUser);
-      setNewUser({ name: "", email: "", role: "User" });
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddUser({
+      ...formData,
+      phone_number: formData.phone_number || undefined
+    });
+    setFormData({
+      name: '',
+      email: '',
+      role: 'USER',
+      phone_number: '',
+      password: ''
+    });
   };
 
   return (
-    <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 mb-8 shadow-lg">
-      <h2 className="text-xl font-semibold mb-4 text-neutral-800 dark:text-neutral-200">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
         Add New User
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input
           type="text"
           placeholder="Name"
-          value={newUser.name}
-          onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-          className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200"
+          value={formData.name}
+          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+          required
         />
         <input
           type="email"
           placeholder="Email"
-          value={newUser.email}
-          onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-          className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200"
+          value={formData.email}
+          onChange={(e) => setFormData({...formData, email: e.target.value})}
+          className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+          required
         />
         <select
-          value={newUser.role}
-          onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-          className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200"
+          value={formData.role}
+          onChange={(e) => setFormData({...formData, role: e.target.value as 'ADMIN' | 'USER'})}
+          className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
         >
-          <option value="User">User</option>
-          <option value="Admin">Admin</option>
+          <option value="USER">User</option>
+          <option value="ADMIN">Admin</option>
         </select>
+        <input
+          type="tel"
+          placeholder="Phone Number (optional)"
+          value={formData.phone_number}
+          onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+          className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={(e) => setFormData({...formData, password: e.target.value})}
+          className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white md:col-span-2"
+          required
+        />
         <button
-          onClick={handleSubmit}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200"
+          type="submit"
+          className="md:col-span-2 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
         >
           Add User
         </button>
-      </div>
+      </form>
     </div>
   );
 }

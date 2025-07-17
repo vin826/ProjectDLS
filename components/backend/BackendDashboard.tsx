@@ -1,36 +1,96 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SlideManager from "./SlideManager";
 import CardManager from "./CardManager";
 import UserForm from "./UserForm";
 import UserTable from "./UserTable";
 
 interface User {
-  id: number;
+  user_id: string;
   name: string;
   email: string;
-  role: string;
+  role: 'ADMIN' | 'USER';
+  phone_number?: bigint;
+  created_at: Date;
+}
+
+// Add this new interface for the form data
+interface UserFormData {
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'USER';
+  phone_number?: string;
+  password: string;
 }
 
 export default function BackendDashboard() {
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: "John Doe", email: "john@example.com", role: "Admin" },
-    { id: 2, name: "Jane Smith", email: "jane@example.com", role: "User" },
-    { id: 3, name: "Bob Johnson", email: "bob@example.com", role: "User" },
-  ]);
-
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'slides' | 'cards' | 'users'>('users');
 
-  const addUser = (newUser: Omit<User, 'id'>) => {
-    setUsers([...users, { 
-      id: users.length + 1, 
-      ...newUser 
-    }]);
+  // Load users from database when component mounts
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteUser = (id: number) => {
-    setUsers(users.filter(user => user.id !== id));
+  // Update this function to handle the type conversion
+  const addUser = async (newUser: UserFormData) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newUser),
+      });
+      
+      if (response.ok) {
+        const createdUser = await response.json();
+        setUsers([...users, createdUser]);
+      }
+    } catch (error) {
+      console.error('Error adding user:', error);
+    }
   };
+
+  const deleteUser = async (user_id: string) => {
+    try {
+      const response = await fetch(`/api/users/${user_id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setUsers(users.filter(user => user.user_id !== user_id));
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -78,10 +138,10 @@ export default function BackendDashboard() {
           <div>
             <div className="mb-8">
               <h1 className="text-3xl md:text-5xl font-bold text-neutral-800 dark:text-neutral-200 mb-4">
-                Backend Dashboard
+                User Management
               </h1>
               <p className="text-neutral-600 dark:text-neutral-400 text-lg">
-                Manage your application data and users
+                Manage your application users ({users.length} total)
               </p>
             </div>
 
