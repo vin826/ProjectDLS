@@ -20,6 +20,7 @@ model User {
   balances       UserCurrencyBalances[]
   transactions   Transactions[]
   registrations  TournamentRegistrations[]
+  created_cards  Card[]  // Add this line if you want the relation
 }
 
 model User_Profile {
@@ -106,18 +107,19 @@ model TournamentRegistrations {
   payment_transaction   Transactions? @relation("PaymentTransaction", fields: [payment_transaction_id], references: [transaction_id])
 }
 
-model CarouselContent {
-  content_id     String   @id @default(uuid())
-  title          String
-  description    String?
-  image_url      String?
-  link_url       String?
-  order_index    Int
-  is_active      Boolean
-  created_by     String
-  created_at     DateTime
-  updated_at     DateTime
-  last_edited_by String?
+model Card {
+  card_id          Int      @id @default(autoincrement())
+  category    String
+  title       String
+  src         String   // This replaces image_url
+  content     String   // This replaces description
+  created_by  String?  // Optional: track who created it
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  creator     User?    @relation(fields: [created_by], references: [user_id])
+
+  @@map("cards")
 }
 
 enum Role {

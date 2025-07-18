@@ -13,15 +13,25 @@ export default function CarouselDemo() {
   const [currentView, setCurrentView] = useState<'frontend' | 'backend'>('frontend');
   const { cards, slides } = useData();
 
+  
+  // Add safety checks
+  if (!cards || !Array.isArray(cards)) {
+    return <div>Loading...</div>;
+  }
+
+  if (!slides || !Array.isArray(slides)) {
+    return <div>Loading...</div>;
+  }
+
   // Convert cards to Apple Carousel format
   const appleCarouselItems = cards.map((card, index) => (
-    <Card key={card.id} card={card} index={index} />
+    <Card key={card.card_id} card={card} index={index} />
   ));
 
   const links = [
     {
       label: "Home",
-      href: "#",
+      href: "#",  
       icon: <IconHome className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
       onClick: () => setCurrentView('frontend')
     },
@@ -91,7 +101,7 @@ export default function CarouselDemo() {
               src: slide.src
             }))}
             cards={cards.map((card, index) => (
-              <Card key={card.id} card={card} index={index} />
+              <Card key={card.card_id} card={card} index={index} />
             ))}
           />
         ) : (

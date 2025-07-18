@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
-import { IconPlus, IconTrash, IconEdit } from "@tabler/icons-react";
-import { useData } from "@/contexts/DataContext";
 
+import { useData } from "@/contexts/DataContext";
+import { useState, useEffect } from "react";
+import { IconPlus, IconTrash, IconEdit } from "@tabler/icons-react";
 export default function CardManager() {
-  const { cards, addCard, updateCard, deleteCard } = useData();
+  const { cards, setCards } = useData(); // You'll need to add setCards to your context
   
+
   const [newCard, setNewCard] = useState({
     category: "",
     title: "",
@@ -14,20 +15,74 @@ export default function CardManager() {
   });
 
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleAddCard = () => {
-    if (newCard.category && newCard.title && newCard.src && newCard.content) {
-      addCard(newCard);
-      setNewCard({ category: "", title: "", src: "", content: "" });
+  // Fetch cards from backend when component mounts
+  useEffect(() => {
+    fetchCards();
+  }, []);
+
+  const fetchCards = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/cards');
+      const data = await response.json();
+      setCards(data);
+    } catch (error) {
+      console.error('Error fetching cards:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteCard = (id: number) => {
-    deleteCard(id);
+  const handleAddCard = async () => {
+    if (newCard.category && newCard.title && newCard.src && newCard.content) {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/cards', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newCard),
+        });
+        
+        if (response.ok) {
+          const createdCard = await response.json();
+          setCards([...cards, createdCard]);
+          setNewCard({ category: "", title: "", src: "", content: "" });
+        } else {
+          console.error('Failed to add card');
+        }
+      } catch (error) {
+        console.error('Error adding card:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  const handleEditCard = (id: number) => {
-    const card = cards.find(c => c.id === id);
+  const handleDeleteCard = async (card_id: number) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/cards/${card_id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setCards(cards.filter(card => card.card_id !== card_id));
+      } else {
+        console.error('Failed to delete card');
+      }
+    } catch (error) {
+      console.error('Error deleting card:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditCard = (card_id: number) => {
+    const card = cards.find(c => c.card_id === card_id);
     if (card) {
       setNewCard({ 
         category: card.category, 
@@ -35,15 +90,35 @@ export default function CardManager() {
         src: card.src, 
         content: card.content 
       });
-      setEditingId(id);
+      setEditingId(card_id);
     }
   };
 
-  const handleUpdateCard = () => {
+  const handleUpdateCard = async () => {
     if (editingId && newCard.category && newCard.title && newCard.src && newCard.content) {
-      updateCard(editingId, newCard);
-      setNewCard({ category: "", title: "", src: "", content: "" });
-      setEditingId(null);
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/cards/${editingId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newCard),
+        });
+        
+        if (response.ok) {
+          const updatedCard = await response.json();
+          setCards(cards.map(card => card.card_id === editingId ? updatedCard : card));
+          setNewCard({ category: "", title: "", src: "", content: "" });
+          setEditingId(null);
+        } else {
+          console.error('Failed to update card');
+        }
+      } catch (error) {
+        console.error('Error updating card:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -59,6 +134,15 @@ export default function CardManager() {
     "Sports",
     "Travel"
   ];
+
+  if (loading) {
+    return (
+      <div className="text-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading cards...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -108,7 +192,8 @@ export default function CardManager() {
         <div className="flex gap-2">
           <button
             onClick={editingId ? handleUpdateCard : handleAddCard}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             <IconPlus className="h-4 w-4" />
             {editingId ? "Update Card" : "Add Card"}
@@ -136,7 +221,7 @@ export default function CardManager() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {cards.map((card) => (
-            <div key={card.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <div key={card.card_id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
               <img
                 src={card.src}
                 alt={card.title}
@@ -156,15 +241,17 @@ export default function CardManager() {
               
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleEditCard(card.id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600 transition-colors"
+                  onClick={() => handleEditCard(card.card_id)}
+                  disabled={loading}
+                  className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600 transition-colors disabled:opacity-50"
                 >
                   <IconEdit className="h-3 w-3" />
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDeleteCard(card.id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
+                  onClick={() => handleDeleteCard(card.card_id)}
+                  disabled={loading}
+                  className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
                   <IconTrash className="h-3 w-3" />
                   Delete

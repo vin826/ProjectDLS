@@ -1,8 +1,20 @@
 "use client";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
+interface DataContextType {
+  cards: CardData[];
+  slides: SlideData[];
+  setCards: (cards: CardData[]) => void;
+  addCard: (card: Omit<CardData, 'card_id'>) => void;
+  updateCard: (card_id: number, card: Omit<CardData, 'card_id'>) => void;
+  deleteCard: (card_id: number) => void;
+  addSlide: (slide: Omit<SlideData, 'id'>) => void;
+  updateSlide: (id: number, slide: Omit<SlideData, 'id'>) => void;
+  deleteSlide: (id: number) => void;
+}
+
 interface CardData {
-  id: number;
+  card_id: number;
   category: string;
   title: string;
   src: string;
@@ -14,17 +26,6 @@ interface SlideData {
   title: string;
   button: string;
   src: string;
-}
-
-interface DataContextType {
-  cards: CardData[];
-  slides: SlideData[];
-  addCard: (card: Omit<CardData, 'id'>) => void;
-  updateCard: (id: number, card: Omit<CardData, 'id'>) => void;
-  deleteCard: (id: number) => void;
-  addSlide: (slide: Omit<SlideData, 'id'>) => void;
-  updateSlide: (id: number, slide: Omit<SlideData, 'id'>) => void;
-  deleteSlide: (id: number) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -40,21 +41,21 @@ export const useData = () => {
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [cards, setCards] = useState<CardData[]>([
     {
-      id: 1,
+      card_id: 1,
       category: "Artificial Intelligence",
       title: "You can do more with AI.",
       src: "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=80&w=3556&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       content: "AI is revolutionizing how we work and live. From smart assistants to predictive analytics, artificial intelligence is making our daily tasks more efficient and opening up new possibilities we never imagined before.",
     },
     {
-      id: 2,
+      card_id: 2,
       category: "Productivity",
       title: "Enhance your productivity.",
       src: "https://images.unsplash.com/photo-1531554694128-c4c6665f59c2?q=80&w=3387&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       content: "Boost your productivity with smart tools and techniques. Learn how to manage your time better, organize your workspace, and use technology to streamline your workflow for maximum efficiency.",
     },
     {
-      id: 3,
+      card_id: 3,
       category: "Technology",
       title: "Latest Tech Innovations",
       src: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
@@ -90,20 +91,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   ]);
 
   // Card functions
-  const addCard = (card: Omit<CardData, 'id'>) => {
+  const addCard = (card: Omit<CardData, 'card_id'>) => {
     const newCard: CardData = {
-      id: Date.now(),
+      card_id: Date.now(),
       ...card,
     };
     setCards(prev => [...prev, newCard]);
   };
 
-  const updateCard = (id: number, card: Omit<CardData, 'id'>) => {
-    setCards(prev => prev.map(c => c.id === id ? { ...c, ...card } : c));
+  const updateCard = (card_id: number, card: Omit<CardData, 'card_id'>) => {
+    setCards(prev => prev.map(c => c.card_id === card_id ? { ...c, ...card } : c));
   };
 
-  const deleteCard = (id: number) => {
-    setCards(prev => prev.filter(c => c.id !== id));
+  const deleteCard = (card_id: number) => {
+    setCards(prev => prev.filter(c => c.card_id !== card_id));
   };
 
   // Slide functions
@@ -127,6 +128,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     <DataContext.Provider value={{
       cards,
       slides,
+      setCards, // Add this line
       addCard,
       updateCard,
       deleteCard,
