@@ -11,7 +11,7 @@ datasource db {
 model User {
   user_id        String                 @id @default(uuid())
   name           String
-  email          String
+  email          String                 @unique
   password_hash  String
   role           Role
   phone_number   BigInt?
