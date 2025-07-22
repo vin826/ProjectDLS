@@ -8,11 +8,16 @@ import BackendDashboard from "@/components/backend/BackendDashboard";
 import FrontendView from "@/components/frontend/FrontendView";
 import { useData } from "@/contexts/DataContext";
 import MobileLoginModal from "@/components/ui/mobile-login-modal";
+import ProfileModal from "@/components/ui/profile-modal";
+
 
 
 export default function CarouselDemo() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'frontend' | 'backend'>('frontend');
+  const [showProfile, setShowProfile] = useState(false); // Add this line
+  const [currentUser, setCurrentUser] = useState<{name: string; email: string; role: 'ADMIN' | 'USER'} | null>(null); // Add this line
+
   const [showLogin, setShowLogin] = useState(false); // Add this line
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
   const { cards, slides } = useData();
@@ -31,13 +36,16 @@ export default function CarouselDemo() {
   const appleCarouselItems = cards.map((card, index) => (
     <Card key={card.card_id} card={card} index={index} />
   ));
+
   // Handle login success
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (user: {name: string; email: string; role: 'ADMIN' | 'USER'}) => {
     setIsLoggedIn(true);
+    setCurrentUser(user);
     setShowLogin(false);
   };
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setCurrentUser(null);
     setCurrentView('frontend'); // Go back to frontend view
   };
 
@@ -96,6 +104,13 @@ export default function CarouselDemo() {
         onLoginSuccess={handleLoginSuccess}
       />
 
+      {/* Profile Modal */}
+      <ProfileModal 
+        isOpen={showProfile} 
+        onClose={() => setShowProfile(false)}
+        user={currentUser}
+      />
+
       {/* Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
         <SidebarBody className="justify-between gap-10">
@@ -118,13 +133,36 @@ export default function CarouselDemo() {
             </div>
           </div>
           
-          {/* User Status at Bottom */}
+         {/* User Status at Bottom - Make it clickable */}
           <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-            <div className="flex items-center gap-2 px-2 py-2">
-              <div className={`h-2 w-2 rounded-full ${isLoggedIn ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                {isLoggedIn ? 'Logged In' : 'Guest User'}
-              </span>
+            <div 
+              className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
+              onClick={() => isLoggedIn && setShowProfile(true)}
+            >
+              {/* User Avatar */}
+              <div className="relative">
+                <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
+                    {isLoggedIn && currentUser ? currentUser.name.charAt(0).toUpperCase() : 'G'}
+                  </span>
+                </div>
+                <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${isLoggedIn ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+              </div>
+              
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                  {isLoggedIn && currentUser ? currentUser.name : 'Guest User'}
+                </p>
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                  {isLoggedIn && currentUser ? currentUser.role : 'Not logged in'}
+                </p>
+              </div>
+              
+              {/* Click indicator */}
+              {isLoggedIn && (
+                <IconSettings className="h-4 w-4 text-neutral-400" />
+              )}
             </div>
           </div>
         </SidebarBody>
@@ -153,11 +191,20 @@ export default function CarouselDemo() {
               </button>
             )}
             
-            {/* Mobile User Status */}
+             {/* Mobile User Status - Also clickable */}
             {isLoggedIn && (
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Logged In</span>
+              <div 
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setShowProfile(true)}
+              >
+                <div className="h-6 w-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-medium">
+                    {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {currentUser ? currentUser.name : 'User'}
+                </span>
               </div>
             )}
           </div>
