@@ -10,7 +10,16 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    domains:['localhost'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: '/uploads/:path*',
+      },
+    ];
+  }
 };
 
 export default nextConfig;

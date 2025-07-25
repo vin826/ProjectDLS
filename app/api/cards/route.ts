@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { CardController } from '@/controllers/CardController';
 
+
 export async function GET() {
   return CardController.getCards();
 }

@@ -5,7 +5,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const cardId = parseInt(params.id);
+  const { id } = await params;
+  const cardId = parseInt(id);
   if (isNaN(cardId)) {
     return new Response(JSON.stringify({ error: 'Invalid card ID' }), {
       status: 400,
@@ -20,7 +21,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const cardId = parseInt(params.id);
+  const { id } = await params;
+  const cardId = parseInt(id);
   if (isNaN(cardId)) {
     return new Response(JSON.stringify({ error: 'Invalid card ID' }), {
       status: 400,

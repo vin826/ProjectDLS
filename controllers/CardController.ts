@@ -19,12 +19,12 @@ export class CardController {
   static async createCard(request: NextRequest) {
     try {
       const body = await request.json();
-      const { category, title, src, content } = body;
+      const { category, title, src, content,button_text,button_link} = body;
 
       // Validate required fields
-      if (!category || !title || !src || !content) {
+      if (!category || !title || !src || !content ) {
         return NextResponse.json(
-          { error: 'All fields (category, title, src, content) are required' },
+          { error: 'All fields (category, title, src, content, buttonText, buttonLink) are required' },
           { status: 400 }
         );
       }
@@ -33,7 +33,10 @@ export class CardController {
         category,
         title,
         src,
-        content
+        content,
+        button_text,
+        button_link
+
       });
 
       return NextResponse.json(card);
@@ -49,7 +52,7 @@ export class CardController {
   static async updateCard(request: NextRequest, card_id: number) {
     try {
       const body = await request.json();
-      const { category, title, src, content } = body;
+      const { category, title, src, content, button_text, button_link } = body;
 
       // Check if card exists
       const existingCard = await CardModel.findById(card_id);
@@ -64,7 +67,9 @@ export class CardController {
         category,
         title,
         src,
-        content
+        content,
+        button_text,
+        button_link
       });
 
       return NextResponse.json(updatedCard);

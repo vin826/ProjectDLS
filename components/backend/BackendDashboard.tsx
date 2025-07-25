@@ -26,12 +26,37 @@ interface UserFormData {
 export default function BackendDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'slides' | 'cards' | 'users'>('users');
 
   // Load users from database when component mounts
   useEffect(() => {
     fetchUsers();
+
+    // Check if we have a user_id stored (maybe in localStorage just for the ID)
+    const savedUserId = localStorage.getItem('current_user_id');
+    if (savedUserId) {
+      fetchCurrentUser(savedUserId);
+    }
   }, []);
+
+  const fetchCurrentUser = async (user_id: string) => {
+    try {
+      const response = await fetch(`/api/users/${user_id}`);
+      if (response.ok) {
+        const userData = await response.json();
+        setCurrentUser(userData);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  const handleLoginSuccess = (userData: User) => {
+    // Store just the user ID for persistence
+    localStorage.setItem('current_user_id', userData.user_id);
+    setCurrentUser(userData);
+  };
 
   const fetchUsers = async () => {
     try {

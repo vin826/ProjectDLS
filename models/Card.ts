@@ -5,7 +5,10 @@ export interface CreateCardData {
   title: string;
   src: string;
   content: string;
+  button_text?: string;
+  button_link?: string;
   created_by?: string;
+
 }
 
 export interface UpdateCardData {
@@ -13,6 +16,8 @@ export interface UpdateCardData {
   title?: string;
   src?: string;
   content?: string;
+  button_text?: string;
+  button_link?: string;
 }
 
 export class CardModel {
@@ -23,6 +28,8 @@ export class CardModel {
         category: true,
         title: true,
         src: true,
+        button_link: true,
+        button_text: true,
         content: true,
         created_at: true,
       },
@@ -41,6 +48,8 @@ export class CardModel {
         title: true,
         src: true,
         content: true,
+        button_text: true,
+        button_link: true,
         created_at: true,
       }
     });
@@ -58,6 +67,8 @@ export class CardModel {
         title: true,
         src: true,
         content: true,
+        button_text: true,
+        button_link: true,
         created_at: true,
       }
     });
@@ -73,7 +84,10 @@ export class CardModel {
         title: true,
         src: true,
         content: true,
+        button_text: true,
+        button_link: true,
         created_at: true,
+        
       }
     });
   }

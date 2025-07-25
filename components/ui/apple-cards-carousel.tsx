@@ -16,6 +16,36 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
 import Image, { ImageProps } from "next/image";
 import { useOutsideClick } from "@/hooks/use-outside-click";
+import { CardModel } from '@/models/Card';
+
+const BlurImage = ({
+  height,
+  width,
+  src,
+  className,
+  alt,
+  fill,
+  ...rest
+}: ImageProps) => {
+  const [isLoading, setLoading] = useState(true);
+  return (
+    <Image
+      className={cn(
+        "transition duration-300",
+        isLoading ? "blur-sm" : "blur-0",
+        className
+      )}
+      onLoad={() => setLoading(false)}
+      src={src}
+      width={width}
+      height={height}
+      fill={fill}
+      alt={alt ? alt : "Background of a beautiful view"}
+      {...rest}
+    />
+  );
+};
+
 
 interface CarouselProps {
   items: React.ReactElement[];
@@ -27,6 +57,8 @@ type Card = {
   title: string;
   category: string;
   content: React.ReactNode;
+  button_text?: string;
+  button_link?: string;
 };
 
 export const CarouselContext = createContext<{
@@ -270,6 +302,13 @@ export const Card = ({
     onCardClose(index);
   };
 
+  const handleButtonClick = (e: React.MouseEvent, link?: string) => {
+    e.stopPropagation(); // Prevent card from opening when button is clicked
+    if (link) {
+      window.open(link, '_blank'); // Open link in new tab
+    }
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -308,16 +347,29 @@ export const Card = ({
                 {card.title}
               </motion.p>
               <div className="py-10">{card.content}</div>
+              
+              {/* Add button in modal too */}
+              {card.button_text && (
+                <button
+                  onClick={(e) => {e.stopPropagation(); handleButtonClick(e, card.button_link)}}
+                  className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  {card.button_text}
+                </button>
+              )}
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+      
       <motion.button
         layoutId={layout ? `card-${card.title}` : undefined}
         onClick={handleOpen}
-        className="relative z-10 flex h-80 w-56 flex-col items-start justify-start overflow-hidden rounded-3xl bg-gray-100 md:h-[40rem] md:w-96 dark:bg-neutral-900"
+        className="relative z-10 flex h-80 w-56 flex-col items-start justify-between overflow-hidden rounded-3xl bg-gray-100 md:h-[40rem] md:w-96 dark:bg-neutral-900"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 z-30 h-full bg-gradient-to-b from-black/50 via-transparent to-transparent" />
+        
+        {/* Top content */}
         <div className="relative z-40 p-8">
           <motion.p
             layoutId={layout ? `category-${card.category}` : undefined}
@@ -332,6 +384,19 @@ export const Card = ({
             {card.title}
           </motion.p>
         </div>
+
+        {/* Bottom button */}
+        {card.button_text && (
+          <div className="relative z-40 p-8 w-full">
+            <button
+              onClick={(e) => handleButtonClick(e, card.button_link)}
+              className="w-full px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg hover:bg-white/30 transition-all duration-200 font-medium border border-white/30"
+            >
+              {card.button_text}
+            </button>
+          </div>
+        )}
+        
         <BlurImage
           src={card.src}
           alt={card.title}
@@ -343,34 +408,3 @@ export const Card = ({
   );
 };
 
-export const BlurImage = ({
-  height,
-  width,
-  src,
-  className,
-  alt,    
-  fill,
-  blurDataURL,
-  ...rest
-}: ImageProps) => {
-  const [isLoading, setLoading] = useState(true);
-  return (
-    <Image
-      className={cn(
-        "h-full w-full transition duration-300",
-        isLoading ? "blur-sm" : "blur-0",
-        className,
-      )}
-      onLoad={() => setLoading(false)}
-      src={src}
-      width={width}
-      height={height}
-      fill={fill}
-      loading="lazy"
-      blurDataURL={blurDataURL}
-      placeholder={blurDataURL ? "blur" : "empty"}
-      alt={alt ? alt : "Background of a beautiful view"}
-      {...rest}
-    />
-  );
-};

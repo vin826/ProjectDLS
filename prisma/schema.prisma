@@ -113,6 +113,8 @@ model Card {
   title       String
   src         String   // This replaces image_url
   content     String   // This replaces description
+  button_text String?
+  button_link String?   
   created_by  String?  // Optional: track who created it
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt

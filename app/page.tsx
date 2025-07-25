@@ -15,10 +15,10 @@ import ProfileModal from "@/components/ui/profile-modal";
 export default function CarouselDemo() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'frontend' | 'backend'>('frontend');
-  const [showProfile, setShowProfile] = useState(false); // Add this line
-  const [currentUser, setCurrentUser] = useState<{name: string; email: string; role: 'ADMIN' | 'USER'} | null>(null); // Add this line
+  const [showProfile, setShowProfile] = useState(false); 
+  const [currentUser, setCurrentUser] = useState<{user_id: string; name: string; email: string; role: 'ADMIN' | 'USER'; profile_image?: string; phone?: string; bio?: string; } | null>(null); // Add this line
 
-  const [showLogin, setShowLogin] = useState(false); // Add this line
+  const [showLogin, setShowLogin] = useState(false); 
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
   const { cards, slides } = useData();
 
@@ -38,9 +38,17 @@ export default function CarouselDemo() {
   ));
 
   // Handle login success
-  const handleLoginSuccess = (user: {name: string; email: string; role: 'ADMIN' | 'USER'}) => {
+  const handleLoginSuccess = (user: {user_id: string; name: string; email: string; role: 'ADMIN' | 'USER'; profile_image?: string; phone?: string; bio?: string; profile_image_url?: string; phone_number?: string;}) => {
+    console.log("Login successful:", user);
+    console.log("🔍 User data structure:", {
+    phone: user.phone,
+    phone_number: user.phone_number, // Check if this exists
+    profile_image: user.profile_image,
+    profile_image_url: user.profile_image_url // Check if this exists
+  });
+
     setIsLoggedIn(true);
-    setCurrentUser(user);
+    setCurrentUser(user);     
     setShowLogin(false);
   };
   const handleLogout = () => {
@@ -71,14 +79,9 @@ export default function CarouselDemo() {
       href: "#",
       icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
     },
-    {
-      label: "Database",
-      href: "#",
-      icon: <IconDatabase className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      onClick: () => setCurrentView('backend')
-    },
+    
      // Only show Database link if logged in
-    ...(isLoggedIn ? [{
+    ...(isLoggedIn && currentUser?.role === 'ADMIN' ? [{
       label: "Database",
       href: "#",
       icon: <IconDatabase className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
@@ -109,6 +112,10 @@ export default function CarouselDemo() {
         isOpen={showProfile} 
         onClose={() => setShowProfile(false)}
         user={currentUser}
+        onProfileUpdate={(updatedUser) => {
+        console.log("🔄 Profile updated:", updatedUser);
+        setCurrentUser(updatedUser);
+  }}
       />
 
       {/* Sidebar */}
@@ -141,11 +148,19 @@ export default function CarouselDemo() {
             >
               {/* User Avatar */}
               <div className="relative">
-                <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {isLoggedIn && currentUser ? currentUser.name.charAt(0).toUpperCase() : 'G'}
-                  </span>
-                </div>
+                {isLoggedIn && currentUser?.profile_image && !currentUser.profile_image.startsWith('blob:') ?  (
+                  <img 
+                    src={currentUser.profile_image} 
+                    alt={currentUser.name}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      {isLoggedIn && currentUser ? currentUser.name.charAt(0).toUpperCase() : 'G'}
+                    </span>
+                  </div>
+                )}
                 <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${isLoggedIn ? 'bg-green-500' : 'bg-gray-400'}`}></div>
               </div>
               
@@ -197,11 +212,19 @@ export default function CarouselDemo() {
                 className="flex items-center gap-2 cursor-pointer"
                 onClick={() => setShowProfile(true)}
               >
-                <div className="h-6 w-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-medium">
-                    {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                  </span>
-                </div>
+                {currentUser?.profile_image ? (
+                  <img 
+                    src={currentUser.profile_image} 
+                    alt={currentUser.name}
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-6 w-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-medium">
+                      {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </span>
+                  </div>
+                )}
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {currentUser ? currentUser.name : 'User'}
                 </span>

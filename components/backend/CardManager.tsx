@@ -12,6 +12,9 @@ export default function CardManager() {
     title: "",
     src: "",
     content: "",
+    button_text: "",
+    button_link: "",
+   
   });
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -50,7 +53,7 @@ export default function CardManager() {
         if (response.ok) {
           const createdCard = await response.json();
           setCards([...cards, createdCard]);
-          setNewCard({ category: "", title: "", src: "", content: "" });
+          setNewCard({ category: "", title: "", src: "", content: "", button_text: "", button_link: "" });
         } else {
           console.error('Failed to add card');
         }
@@ -88,7 +91,10 @@ export default function CardManager() {
         category: card.category, 
         title: card.title, 
         src: card.src, 
-        content: card.content 
+        content: card.content,
+        button_text: card.button_text || "",
+        button_link: card.button_link || "",
+        
       });
       setEditingId(card_id);
     }
@@ -109,7 +115,7 @@ export default function CardManager() {
         if (response.ok) {
           const updatedCard = await response.json();
           setCards(cards.map(card => card.card_id === editingId ? updatedCard : card));
-          setNewCard({ category: "", title: "", src: "", content: "" });
+          setNewCard({ category: "", title: "", src: "", content: "", button_text: "", button_link: "" });
           setEditingId(null);
         } else {
           console.error('Failed to update card');
@@ -144,7 +150,7 @@ export default function CardManager() {
     );
   }
 
-  return (
+   return (
     <div className="space-y-6">
       {/* Add/Edit Form */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
@@ -188,6 +194,25 @@ export default function CardManager() {
           rows={4}
           className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white mb-4"
         />
+
+        {/* Button Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Button Text (e.g., Learn More, Get Started)"
+            value={newCard.button_text}
+            onChange={(e) => setNewCard({ ...newCard, button_text: e.target.value })}
+            className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
+          />
+
+          <input
+            type="url"
+            placeholder="Button Link (optional)"
+            value={newCard.button_link}
+            onChange={(e) => setNewCard({ ...newCard, button_link: e.target.value })}
+            className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
+          />
+        </div>
         
         <div className="flex gap-2">
           <button
@@ -203,7 +228,7 @@ export default function CardManager() {
             <button
               onClick={() => {
                 setEditingId(null);
-                setNewCard({ category: "", title: "", src: "", content: "" });
+                setNewCard({ category: "", title: "", src: "", content: "", button_text: "", button_link: "" });
               }}
               className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
             >
@@ -216,7 +241,7 @@ export default function CardManager() {
       {/* Cards List */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
         <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-          Current Apple Cards ({cards.length})
+          Current Events ({cards.length})
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -239,13 +264,26 @@ export default function CardManager() {
                 {card.content}
               </p>
               
+              {/* Show button info if exists */}
+              {card.button_text && (
+                <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Button: </span>
+                  <span className="text-blue-600 dark:text-blue-400">{card.button_text}</span>
+                  {card.button_link && (
+                    <div className="text-gray-500 dark:text-gray-400 truncate">
+                      Link: {card.button_link}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEditCard(card.card_id)}
                   disabled={loading}
                   className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600 transition-colors disabled:opacity-50"
                 >
-                  <IconEdit className="h-3 w-3" />
+                 <IconEdit className="h-3 w-3" />
                   Edit
                 </button>
                 <button
@@ -273,7 +311,9 @@ export default function CardManager() {
               category: "Design",
               title: "Beautiful UI Components",
               src: "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=3540&auto=format&fit=crop",
-              content: "Create stunning user interfaces with modern design principles and beautiful components that users love to interact with."
+              content: "Create stunning user interfaces with modern design principles and beautiful components that users love to interact with.",
+              button_text: "Learn More",
+              button_link: "https://example.com/design"
             })}
             className="text-left p-2 bg-white dark:bg-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
@@ -284,7 +324,9 @@ export default function CardManager() {
               category: "Business",
               title: "Scale Your Startup",
               src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=3540&auto=format&fit=crop",
-              content: "Learn proven strategies to scale your startup from idea to successful business with practical tips from industry experts."
+              content: "Learn proven strategies to scale your startup from idea to successful business with practical tips from industry experts.",
+              button_text: "Get Started",
+              button_link: "https://example.com/business"
             })}
             className="text-left p-2 bg-white dark:bg-gray-800 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
