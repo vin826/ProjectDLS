@@ -4,7 +4,7 @@ import { UserController } from '@/controllers/UserController';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   return UserController.getUserById(id);
@@ -12,15 +12,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } =  await params;
+  const { id } = await params;
   return UserController.updateUser(request,id);
 }
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } =  await params;
+  const { id } = await params;
   return UserController.deleteUser(id);
 }

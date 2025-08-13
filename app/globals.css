@@ -7,3 +7,254 @@
 next-route-announcer{
 display:none;
 }
+
+/* Mobile responsive improvements */
+@layer base {
+  html {
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    /* Better text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    /* Prevent horizontal scrolling */
+    overflow-x: hidden;
+    /* Better touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Hide scrollbars */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Improve touch targets on very small mobile */
+  @media (max-width: 375px) {
+    button, [role="button"] {
+      min-height: 40px;
+      min-width: 40px;
+    }
+    
+    input, textarea, select {
+      min-height: 36px;
+    }
+  }
+  
+  /* Extra aggressive mobile optimizations for 344px and below */
+  @media (max-width: 344px) {
+    /* Force smaller card sizes for ultra-mobile */
+    [class*="h-32"][class*="w-24"] {
+      height: 120px !important;
+      width: 80px !important;
+    }
+    
+    /* Ensure carousel doesn't overflow */
+    [class*="flex"][class*="gap-"] {
+      gap: 0.125rem !important;
+    }
+    
+    /* Make card text more readable */
+    [class*="text-xs"] {
+      font-size: 10px !important;
+      line-height: 1.2 !important;
+    }
+    
+    /* Optimize card padding */
+    [class*="p-1.5"] {
+      padding: 0.25rem !important;
+    }
+    
+    /* Ensure modal is mobile-friendly */
+    [class*="max-w-5xl"] {
+      max-width: calc(100vw - 1rem) !important;
+      margin: 0.5rem !important;
+    }
+  }
+  
+  /* Improve touch targets on mobile */
+  @media (min-width: 376px) and (max-width: 768px) {
+    button, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+  
+  /* Prevent zoom on input focus (iOS Safari) */
+  @media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"],
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+  
+  /* Extra responsive utilities for very small screens */
+  @media (max-width: 375px) {
+    .text-responsive-xs {
+      font-size: 0.75rem;
+    }
+    
+    .p-responsive-xs {
+      padding: 0.375rem;
+    }
+    
+    .gap-responsive-xs {
+      gap: 0.25rem;
+    }
+  }
+
+  /* Truly flexible card layout that adapts to any screen size */
+  .card-responsive {
+    /* Larger base size using viewport width with bigger constraints */
+    width: clamp(120px, 35vw, 500px);
+    height: clamp(180px, 50vw, 750px);
+    aspect-ratio: 3/4;
+    
+    /* Responsive border radius */
+    border-radius: clamp(0.5rem, 2vw, 2rem);
+  }
+  
+  /* Flexible carousel container with responsive gaps and padding */
+  .carousel-container {
+  gap: clamp(0.25rem, 1.5vw, 1.5rem);
+  padding-left: clamp(0.5rem, 1.5vw, 1.5rem);
+  }
+  
+  /* Last card padding to ensure proper scrolling */
+  .carousel-container > *:last-child {
+  padding-right: clamp(1rem, 6vw, 10rem);
+  }
+  
+  /* Responsive card content styling */
+  .card-content-top {
+    padding: clamp(0.75rem, 3vw, 3rem);
+  }
+  
+  .card-content-bottom {
+    padding: clamp(0.75rem, 3vw, 3rem);
+  }
+  
+  .card-category-text {
+    font-size: clamp(0.875rem, 2.5vw, 1.5rem);
+    line-height: 1.2;
+  }
+  
+  .card-title-text {
+    font-size: clamp(1rem, 3.5vw, 2.5rem);
+    line-height: 1.1;
+    margin-top: clamp(0.25rem, 1vw, 1rem);
+  }
+  
+  .card-button-text {
+    font-size: clamp(0.875rem, 2.2vw, 1.25rem);
+    padding: clamp(0.5rem, 1.5vw, 1rem) clamp(0.75rem, 2vw, 1.5rem);
+    border-radius: clamp(0.375rem, 1.5vw, 0.75rem);
+  }
+
+  /* Make rich content inside card modal scale to mobile */
+  .card-content-body {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .card-content-body img,
+  .card-content-body video,
+  .card-content-body iframe {
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: 0.5rem;
+  }
+  .card-content-body ul,
+  .card-content-body ol {
+    padding-left: 1rem;
+  }
+  
+  /* Adjust card count based on screen width for optimal fit */
+  @media (max-width: 320px) {
+    .card-responsive {
+      /* Nearly full-width on ultra-small screens */
+      width: min(94vw, 380px);
+      height: auto; /* aspect-ratio controls height */
+    }
+  }
+  
+  @media (min-width: 321px) and (max-width: 480px) {
+    .card-responsive {
+      /* Nearly full-width on small mobile */
+      width: min(92vw, 420px);
+      height: auto; /* aspect-ratio controls height */
+    }
+  }
+  
+  @media (min-width: 481px) and (max-width: 768px) {
+    .card-responsive {
+      /* Show 2.5-3 cards on tablets */
+      width: clamp(180px, 38vw, 280px);
+      height: clamp(270px, 55vw, 420px);
+    }
+  }
+  
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .card-responsive {
+      width: clamp(200px, 30vw, 320px);
+      height: clamp(300px, 42vw, 480px);
+    }
+  }
+  
+  @media (min-width: 1025px) and (max-width: 1440px) {
+    .card-responsive {
+      width: clamp(250px, 25vw, 380px);
+      height: clamp(375px, 35vw, 570px);
+    }
+  }
+  
+  @media (min-width: 1441px) {
+    .card-responsive {
+      width: clamp(300px, 20vw, 500px);
+      height: clamp(450px, 28vw, 750px);
+    }
+  }
+
+  /* (Reverted) Avoid forcing desktop/mobile overrides by height; rely on breakpoints */
+
+  /* Specific card carousel mobile optimizations */
+  @media (max-width: 344px) {
+    /* Force smaller card sizes for ultra-mobile */
+    [class*="h-32"][class*="w-24"] {
+      height: 120px !important;
+      width: 80px !important;
+    }
+    
+    /* Ensure carousel doesn't overflow */
+    [class*="flex"][class*="gap-"] {
+      gap: 0.125rem !important;
+    }
+    
+    /* Make card text more readable */
+    [class*="text-xs"] {
+      font-size: 10px !important;
+      line-height: 1.2 !important;
+    }
+    
+    /* Optimize card padding */
+    [class*="p-1.5"] {
+      padding: 0.25rem !important;
+    }
+    
+    /* Ensure modal is mobile-friendly */
+    [class*="max-w-5xl"] {
+      max-width: calc(100vw - 1rem) !important;
+      margin: 0.5rem !important;
+    }
+  }
+}

@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import SlideManager from "./SlideManager";
 import CardManager from "./CardManager";
 import UserForm from "./UserForm";
 import UserTable from "./UserTable";
+import TournamentManager from "./TournamentManager";
 
 interface User {
   user_id: string;
@@ -27,7 +27,7 @@ export default function BackendDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'slides' | 'cards' | 'users'>('users');
+  const [activeTab, setActiveTab] = useState<'cards' | 'users' | 'tournaments'>('users');
 
   // Load users from database when component mounts
   useEffect(() => {
@@ -90,6 +90,27 @@ export default function BackendDashboard() {
     }
   };
 
+  const updateUser = async (user_id: string, updatedUser: Partial<UserFormData>) => {
+    try {
+      const response = await fetch(`/api/users/${user_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedUser),
+      });
+      
+      if (response.ok) {
+        const updatedUserData = await response.json();
+        setUsers(users.map(user => 
+          user.user_id === user_id ? updatedUserData : user
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+  };
+
   const deleteUser = async (user_id: string) => {
     try {
       const response = await fetch(`/api/users/${user_id}`, {
@@ -127,16 +148,6 @@ export default function BackendDashboard() {
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-8">
           <button
-            onClick={() => setActiveTab('slides')}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'slides'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-          >
-            Manage Slides
-          </button>
-          <button
             onClick={() => setActiveTab('cards')}
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
               activeTab === 'cards'
@@ -156,10 +167,24 @@ export default function BackendDashboard() {
           >
             Manage Users
           </button>
+          <button
+            onClick={() => setActiveTab('tournaments')}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              activeTab === 'tournaments'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            Manage Tournaments
+          </button>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'slides' ? <SlideManager /> : activeTab === 'cards' ? <CardManager /> : (
+        {activeTab === 'cards' ? (
+          <CardManager />
+        ) : activeTab === 'tournaments' ? (
+          <TournamentManager />
+        ) : (
           <div>
             <div className="mb-8">
               <h1 className="text-3xl md:text-5xl font-bold text-neutral-800 dark:text-neutral-200 mb-4">
@@ -171,7 +196,7 @@ export default function BackendDashboard() {
             </div>
 
             <UserForm onAddUser={addUser} />
-            <UserTable users={users} onDeleteUser={deleteUser} />
+            <UserTable users={users} onDeleteUser={deleteUser} onUpdateUser={updateUser} />
           </div>
         )}
       </div>

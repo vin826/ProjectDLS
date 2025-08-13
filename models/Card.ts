@@ -1,5 +1,17 @@
 import { prisma } from '@/lib/prisma';
 
+export interface CardModel {
+  card_id: number;
+  category: string;
+  title: string;
+  src: string;
+  content: string;
+  button_text?: string;
+  button_link?: string;
+  created_at?: Date;
+  updated_at?: Date;
+  created_by?: string;
+} 
 export interface CreateCardData {
   category: string;
   title: string;

@@ -3,13 +3,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  _ctx: unknown
 ) {
   try {
-    const userId = params.id;
     const body = await request.json();
+    const userId = body.user_id as string;
     
-    console.log('Updating profile for user:', userId);
+  console.log('Updating profile for user:', userId);
     console.log('Update data:', body);
 
     // Update the user's profile information

@@ -2,5 +2,5 @@ import { NextRequest } from 'next/server';
 import { UserController } from '@/controllers/UserController';
 
 export async function POST(request: NextRequest) {
-  return UserController.authenticateUser(request);
+  return UserController.createUser(request);
 }

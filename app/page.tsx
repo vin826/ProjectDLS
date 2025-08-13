@@ -1,105 +1,74 @@
 "use client";
-//import Carousel from "@/components/ui/carousel";
-import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import {  Card } from "@/components/ui/apple-cards-carousel";
-import { IconHome, IconArrowLeft, IconInfoCircle, IconSettings, IconDatabase, IconUser } from "@tabler/icons-react";
-import { useState } from "react";
+
+import { Card } from "@/components/ui/apple-cards-carousel";
+import { IconUser } from "@tabler/icons-react";
+import { useState, useEffect } from "react";
 import BackendDashboard from "@/components/backend/BackendDashboard";
 import FrontendView from "@/components/frontend/FrontendView";
 import { useData } from "@/contexts/DataContext";
 import MobileLoginModal from "@/components/ui/mobile-login-modal";
 import ProfileModal from "@/components/ui/profile-modal";
-
-
+import AppHeader from "@/components/ui/app-header";
+import AppSidebar from "@/components/ui/app-sidebar";
+import { useAuth } from "@/hooks/use-auth";
+import { useNavigation } from "@/hooks/use-navigation";
 
 export default function CarouselDemo() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'frontend' | 'backend'>('frontend');
-  const [showProfile, setShowProfile] = useState(false); 
-  const [currentUser, setCurrentUser] = useState<{user_id: string; name: string; email: string; role: 'ADMIN' | 'USER'; profile_image?: string; phone?: string; bio?: string; } | null>(null); // Add this line
-
-  const [showLogin, setShowLogin] = useState(false); 
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
-  const { cards, slides } = useData();
-
+  const [frontendView, setFrontendView] = useState<'home' | 'cards'>('cards');
+  const { cards, loading } = useData();
   
-  // Add safety checks
-  if (!cards || !Array.isArray(cards)) {
-    return <div>Loading...</div>;
-  }
+  const {
+    currentUser,
+    isLoggedIn,
+    showLogin,
+    setShowLogin,
+    showProfile,
+    setShowProfile,
+    handleLoginSuccess,
+    handleLogout,
+    handleProfileUpdate
+  } = useAuth();
 
-  if (!slides || !Array.isArray(slides)) {
-    return <div>Loading...</div>;
-  }
+  // Automatically redirect to frontend when user logs out or loses admin privileges
+  useEffect(() => {
+    if (!isLoggedIn || (currentUser && currentUser.role !== 'ADMIN')) {
+      if (currentView === 'backend') {
+        setCurrentView('frontend');
+      }
+    }
+  }, [isLoggedIn, currentUser, currentView]);
 
-  // Convert cards to Apple Carousel format
-  const appleCarouselItems = cards.map((card, index) => (
-    <Card key={card.card_id} card={card} index={index} />
-  ));
-
-  // Handle login success
-  const handleLoginSuccess = (user: {user_id: string; name: string; email: string; role: 'ADMIN' | 'USER'; profile_image?: string; phone?: string; bio?: string; profile_image_url?: string; phone_number?: string;}) => {
-    console.log("Login successful:", user);
-    console.log("🔍 User data structure:", {
-    phone: user.phone,
-    phone_number: user.phone_number, // Check if this exists
-    profile_image: user.profile_image,
-    profile_image_url: user.profile_image_url // Check if this exists
+  const { links } = useNavigation({
+    isLoggedIn,
+    currentUser,
+    currentView,
+    setCurrentView,
+    setFrontendView,
+    handleLogout,
+    setShowLogin
   });
 
-    setIsLoggedIn(true);
-    setCurrentUser(user);     
-    setShowLogin(false);
-  };
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setCurrentView('frontend'); // Go back to frontend view
-  };
+  // Add safety checks - only show loading if actually loading, not if cards array is empty
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  const links = [
-    {
-      label: "Home",
-      href: "#",  
-      icon: <IconHome className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
-      onClick: () => setCurrentView('frontend')
-    },
-    {
-      label: "About",
-      href: "#",
-      icon: <IconInfoCircle className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
-    },
-    {
-      label: "Contact",
-      href: "#",
-      icon: <IconInfoCircle className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
-    },
-    {
-      label: "Settings",
-      href: "#",
-      icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-    },
-    
-     // Only show Database link if logged in
-    ...(isLoggedIn && currentUser?.role === 'ADMIN' ? [{
-      label: "Database",
-      href: "#",
-      icon: <IconDatabase className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      onClick: () => setCurrentView('backend')
-    }] : []),
-    // Show Login or Logout based on status
-    {
-      label: isLoggedIn ? "Logout" : "Login",
-      href: "#",
-      icon: isLoggedIn ? 
-        <IconArrowLeft className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" /> :
-        <IconUser className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
-      onClick: isLoggedIn ? handleLogout : () => setShowLogin(true)
-    },
-  ];
+  // Ensure cards is always an array, even if empty
+  const safeCards = Array.isArray(cards) ? cards : [];
+  
+  // Debug logging for mobile visibility issues
+  console.log("🔍 CarouselDemo Debug:", {
+    cardsLength: safeCards.length,
+    loading,
+    currentView,
+    frontendView,
+    cards: safeCards.slice(0, 2) // First 2 cards for debugging
+  });
 
   return (
-    <div className="flex h-screen">
+  <div className="flex flex-col md:flex-row min-h-[100svh] w-full overflow-x-hidden">
       {/* Login Modal */}
       <MobileLoginModal 
         isOpen={showLogin} 
@@ -112,143 +81,42 @@ export default function CarouselDemo() {
         isOpen={showProfile} 
         onClose={() => setShowProfile(false)}
         user={currentUser}
-        onProfileUpdate={(updatedUser) => {
-        console.log("🔄 Profile updated:", updatedUser);
-        setCurrentUser(updatedUser);
-  }}
+        onProfileUpdate={handleProfileUpdate}
       />
 
       {/* Sidebar */}
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
-        <SidebarBody className="justify-between gap-10">
-          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-            {/* Logo/Brand */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg"></div>
-              <span className="text-lg font-bold text-neutral-800 dark:text-neutral-200">
-                Carousel App
-              </span>
-            </div>
-            
-            {/* Navigation Links */}
-            <div className="mt-8 flex flex-col gap-2">
-              {links.map((link, idx) => (
-                <div key={idx} onClick={link.onClick}>
-                  <SidebarLink link={link} />
-                </div>
-              ))}
-            </div>
-          </div>
-          
-         {/* User Status at Bottom - Make it clickable */}
-          <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-            <div 
-              className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
-              onClick={() => isLoggedIn && setShowProfile(true)}
-            >
-              {/* User Avatar */}
-              <div className="relative">
-                {isLoggedIn && currentUser?.profile_image && !currentUser.profile_image.startsWith('blob:') ?  (
-                  <img 
-                    src={currentUser.profile_image} 
-                    alt={currentUser.name}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {isLoggedIn && currentUser ? currentUser.name.charAt(0).toUpperCase() : 'G'}
-                    </span>
-                  </div>
-                )}
-                <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${isLoggedIn ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-              </div>
-              
-              {/* User Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
-                  {isLoggedIn && currentUser ? currentUser.name : 'Guest User'}
-                </p>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                  {isLoggedIn && currentUser ? currentUser.role : 'Not logged in'}
-                </p>
-              </div>
-              
-              {/* Click indicator */}
-              {isLoggedIn && (
-                <IconSettings className="h-4 w-4 text-neutral-400" />
-              )}
-            </div>
-          </div>
-        </SidebarBody>
-      </Sidebar>
+      <AppSidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        links={links}
+        isLoggedIn={isLoggedIn}
+        currentUser={currentUser}
+        setShowProfile={setShowProfile}
+      />
 
       {/* Main content area */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Header - only show on mobile or when sidebar is closed */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm p-4 md:hidden sticky top-0 z-10">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              ☰ Menu
-            </button>
-            
-            {/* Mobile Login Button */}
-            {!isLoggedIn && (
-              <button
-                onClick={() => setShowLogin(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                <IconUser size={16} />
-                Login
-              </button>
-            )}
-            
-             {/* Mobile User Status - Also clickable */}
-            {isLoggedIn && (
-              <div 
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() => setShowProfile(true)}
-              >
-                {currentUser?.profile_image ? (
-                  <img 
-                    src={currentUser.profile_image} 
-                    alt={currentUser.name}
-                    className="h-6 w-6 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-6 w-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-medium">
-                      {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                    </span>
-                  </div>
-                )}
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {currentUser ? currentUser.name : 'User'}
-                </span>
-              </div>
-            )}
-          </div>
-        </header>
+  <div className="flex-1 min-w-0 min-h-0 overflow-y-auto relative">
+        {/* Header */}
+        <AppHeader
+          isLoggedIn={isLoggedIn}
+          currentUser={currentUser}
+          setSidebarOpen={setSidebarOpen}
+          setShowLogin={setShowLogin}
+          setShowProfile={setShowProfile}
+        />
 
         {/* Content based on current view */}
         {currentView === 'frontend' ? (
           <FrontendView
-            slideData={slides.map(slide => ({
-              title: slide.title,
-              button: slide.button,
-              src: slide.src
-            }))}
-            cards={cards.map((card, index) => (
+            view={frontendView}
+            cards={safeCards.map((card, index) => (
               <Card key={card.card_id} card={card} index={index} />
             ))}
           />
         ) : (
           // Only show backend if logged in
           isLoggedIn ? (
-            <BackendDashboard />
+            <BackendDashboard />    
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">

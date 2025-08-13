@@ -1,12 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { Users } from 'lucide-react';
+
+type Role = 'ADMIN' | 'USER';
+
+type UserWithProfile = {
+  user_id: string;
+  name: string;
+  email: string;
+  role: Role;
+  phone_number: bigint | null;
+  created_at: Date;
+  profile?: {
+    profile_image_url: string | null;
+    bio: string | null;
+    display_name: bigint | null;
+  } | null;
+};
+
+type SerializedUser = {
+  user_id: string;
+  name: string;
+  email: string;
+  role: Role;
+  created_at: string;
+  phone_number: string | null;
+  profile_image_url: string | null;
+  bio: string | null;
+  display_name: string | null;
+};
+
+function serializeUser(u: UserWithProfile): SerializedUser {
+  return {
+    user_id: u.user_id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    created_at: u.created_at.toISOString(),
+    phone_number: u.phone_number ? u.phone_number.toString() : null,
+    profile_image_url: u.profile?.profile_image_url ?? null,
+    bio: u.profile?.bio ?? null,
+    display_name: u.profile?.display_name ? u.profile.display_name.toString() : null,
+  };
+}
 
 export class UserController {
   static async getUsers() {
     try {
-      console.log('Attempting to fetch users...');
       const users = await prisma.user.findMany({
         select: {
           user_id: true,
@@ -20,29 +60,15 @@ export class UserController {
               profile_image_url: true,
               bio: true,
               display_name: true,
-            }
-          }
+            },
+          },
         },
-        orderBy: {
-          created_at: 'desc'
-        }
+        orderBy: { created_at: 'desc' },
       });
 
-      // Convert BigInt to string for JSON serialization
-      const serializedUsers = users.map(user => ({
-      ...user,
-      phone_number: user.phone_number ? user.phone_number.toString() : null,
-      profile: user.profile ? {
-       profile_image_url: user.profile.profile_image_url,
-        bio: user.profile.bio,
-        display_name: user.profile.display_name ? user.profile.display_name.toString() : null
-      } : null,
-      profile_image_url: user.profile?.profile_image_url || null,
-      bio: user.profile?.bio || null,
-    }));
-
-      return NextResponse.json(serializedUsers);
-    } catch (error) {
+      const serialized = users.map(serializeUser);
+      return NextResponse.json(serialized);
+    } catch (error: unknown) {
       console.error('Error fetching users:', error);
       return NextResponse.json(
         { error: 'Failed to fetch users' },
@@ -52,83 +78,92 @@ export class UserController {
   }
 
   static async getUserById(user_id: string) {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { user_id },
-      select: {
-        user_id: true,
-        name: true,
-        email: true,
-        role: true,
-        phone_number: true,
-        created_at: true,
-        profile: {
-          select: {
-            profile_image_url: true,
-            bio: true,
-            display_name: true,
-          }
-        }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { user_id },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          role: true,
+          phone_number: true,
+          created_at: true,
+          profile: {
+            select: {
+              profile_image_url: true,
+              bio: true,
+              display_name: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
-    });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json(serializeUser(user));
+    } catch (error: unknown) {
+      console.error('Error fetching user:', error);
+      return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
     }
-
-    // Convert BigInt to string for JSON serialization
-    const serializedUser = {
-      ...user,
-      phone_number: user.phone_number ? user.phone_number.toString() : null,
-      phone: user.phone_number ? user.phone_number.toString() : null,
-      profile_image: user.profile?.profile_image_url || null,
-      bio: user.profile?.bio || null,
-      profile: user.profile ? {
-        ...user.profile,
-        display_name: user.profile.display_name ? user.profile.display_name.toString() : null,
-      } : null,
-    };
-
-    return NextResponse.json(serializedUser);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch user' },
-      { status: 500 }
-    );
   }
-}
 
   static async createUser(request: NextRequest) {
     try {
       const body = await request.json();
-      const { name, email, role, phone_number, password, profile_image_url, bio } = body;
+      const { name, email, role, phone_number, password, profile_image_url, bio } = body as {
+        name: string;
+        email: string;
+        role?: Role;
+        phone_number?: string | null;
+        password: string;
+        profile_image_url?: string | null;
+        bio?: string | null;
+      };
 
-      // Hash the password
-      const password_hash = await bcrypt.hash(password || 'defaultpassword123', 10);
+      if (!name || !email || !password) {
+        return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+      }
+
+      if (password.length < 6) {
+        return NextResponse.json({ error: 'Password must be at least 6 characters long' }, { status: 400 });
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+      });
+      if (existingUser) {
+        return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 });
+      }
+
+      const password_hash = await bcrypt.hash(password, 10);
 
       const user = await prisma.user.create({
         data: {
           name,
-          email,
+          email: email.toLowerCase(),
           password_hash,
           role: role || 'USER',
           phone_number: phone_number ? BigInt(phone_number) : null,
           created_at: new Date(),
-          // Create profile if image or bio provided
-          ...(profile_image_url || bio ? {
-            profile: {
-              create: {
-                display_name: BigInt(Date.now()), // Using timestamp as display_name
-                profile_image_url: profile_image_url || null,
-                bio: bio || null,
-                updated_at: new Date(),
+          ...(profile_image_url || bio
+            ? {
+                profile: {
+                  create: {
+                    display_name: BigInt(Date.now()),
+                    profile_image_url: profile_image_url || null,
+                    bio: bio || null,
+                    updated_at: new Date(),
+                  },
+                },
               }
-            }
-          } : {})
+            : {}),
         },
         select: {
           user_id: true,
@@ -142,38 +177,40 @@ export class UserController {
               profile_image_url: true,
               bio: true,
               display_name: true,
-          
-            }
-          }
-        }
+            },
+          },
+        },
       });
 
-      // Convert BigInt to string for JSON serialization
-      const serializedUser = {
-      ...user,
-      phone_number: user.phone_number ? user.phone_number.toString() : null,
-      profile: user.profile ? {
-        ...user.profile,
-        display_name: user.profile.display_name ? user.profile.display_name.toString() : null
-      } : null,
-      profile_image_url: user.profile?.profile_image_url || null,
-      bio: user.profile?.bio || null,
-    };
-
-      return NextResponse.json(serializedUser);
-    } catch (error) {
-      console.error('Error creating user:', error);
       return NextResponse.json(
-        { error: 'Failed to create user' },
-        { status: 500 }
+        { message: 'User created successfully', user: serializeUser(user) },
+        { status: 201 },
       );
+    } catch (error: unknown) {
+      console.error('Error creating user:', error);
+      if (
+        typeof error === 'object' &&
+        error &&
+        'code' in error &&
+        (error as { code: string }).code === 'P2002'
+      ) {
+        return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 });
+      }
+      return NextResponse.json({ error: 'Failed to create user. Please try again.' }, { status: 500 });
     }
   }
 
   static async updateUser(request: NextRequest, user_id: string) {
     try {
       const body = await request.json();
-      const { name, email, role, phone_number, profile_image_url,bio } = body;
+      const { name, email, role, phone_number, profile_image_url, bio } = body as {
+        name?: string;
+        email?: string;
+        role?: Role;
+        phone_number?: string | null;
+        profile_image_url?: string | null;
+        bio?: string | null;
+      };
 
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
@@ -188,55 +225,36 @@ export class UserController {
         );
       }
 
-      const updatedUser = await prisma.user.update({
+      await prisma.user.update({
         where: { user_id },
         data: {
-          name,
-          email,
-          role,
-          phone_number: phone_number ? BigInt(phone_number) : null,
+          ...(name !== undefined && { name }),
+          ...(email !== undefined && { email }),
+          ...(role !== undefined && { role }),
+          ...(phone_number !== undefined && {
+            phone_number: phone_number ? BigInt(phone_number) : null,
+          }),
         },
-        select: {
-          user_id: true,
-          name: true,
-          email: true,
-          role: true,
-          phone_number: true,
-          created_at: true,
-           profile: {
-            select: {
-              profile_image_url: true,
-              bio: true,
-              display_name: true,
-            }
-          }
-        }
+        select: { user_id: true },
       });
 
       // Handle profile update/creation
       if (profile_image_url !== undefined || bio !== undefined) {
-        if (existingUser.profile) {
-          // Update existing profile
-          await prisma.user_Profile.update({
-            where: { user_id },
-            data: {
-              ...(profile_image_url !== undefined && { profile_image_url: profile_image_url }),
-              ...(bio !== undefined && { bio }),
-              updated_at: new Date(),
-            }
-          });
-        } else {
-          // Create new profile
-          await prisma.user_Profile.create({
-            data: {
-              user_id,
-              display_name: BigInt(Date.now()),
-              profile_image_url: profile_image_url || null,
-              bio: bio || null,
-              updated_at: new Date(),
-            }
-          });
-        }
+        await prisma.user_Profile.upsert({
+          where: { user_id },
+          update: {
+            ...(profile_image_url !== undefined && { profile_image_url }),
+            ...(bio !== undefined && { bio }),
+            updated_at: new Date(),
+          },
+          create: {
+            user_id,
+            display_name: BigInt(Date.now()),
+            profile_image_url: profile_image_url || null,
+            bio: bio || null,
+            updated_at: new Date(),
+          },
+        });
       }
 
       // Fetch updated user with profile
@@ -259,16 +277,12 @@ export class UserController {
         }
       });
 
-      // Convert BigInt to string for JSON serialization
-      const serializedUser = {
-        ...finalUser,
-        phone_number: updatedUser.phone_number ? updatedUser.phone_number.toString() : null,
-        profile_image_url: finalUser?.profile?.profile_image_url || null,
-        bio: finalUser?.profile?.bio || null,
-      };
+      if (!finalUser) {
+        return NextResponse.json({ error: 'User not found after update' }, { status: 404 });
+      }
 
-      return NextResponse.json(serializedUser);
-    } catch (error) {
+      return NextResponse.json(serializeUser(finalUser as UserWithProfile));
+    } catch (error: unknown) {
       console.error('Error updating user:', error);
       return NextResponse.json(
         { error: 'Failed to update user' },
@@ -296,7 +310,7 @@ export class UserController {
       });
 
       return NextResponse.json({ message: 'User deleted successfully' });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting user:', error);
       return NextResponse.json(
         { error: 'Failed to delete user' },
@@ -307,7 +321,7 @@ export class UserController {
 
   static async authenticateUser(request: NextRequest) {
     try {
-      const { email, password } = await request.json();
+      const { email, password } = (await request.json()) as { email: string; password: string };
 
       if (!email || !password) {
         return NextResponse.json(
@@ -328,10 +342,12 @@ export class UserController {
           role: true,
           password_hash: true,
           phone_number: true,
+      created_at: true,
           profile: {
             select: {
               profile_image_url: true,
               bio: true,
+        display_name: true,
             }
           }
         }
@@ -355,24 +371,12 @@ export class UserController {
       }
 
       // Return user data without password
-      const { password_hash, ...userWithoutPassword } = user;
-      
+      // remove password
+      const { password_hash, ...userSansPassword } = user;
+      const serialized = serializeUser(userSansPassword as unknown as UserWithProfile);
 
-      const serializedUser = {
-        ...userWithoutPassword,
-        phone_number: user.phone_number ? user.phone_number.toString() : null,
-        phone: user.phone_number ? user.phone_number.toString() : null, // Add this line
-        profile_image: user.profile?.profile_image_url || null,
-        profile_image_url: user.profile?.profile_image_url || null, // Add this line
-        bio: user.profile?.bio || null,
-      };
-
-      return NextResponse.json({
-        message: 'Login successful',
-        user: serializedUser
-      });
-
-    } catch (error) {
+      return NextResponse.json({ message: 'Login successful', user: serialized });
+    } catch (error: unknown) {
       console.error('Authentication error:', error);
       return NextResponse.json(
         { error: 'Internal server error' },
@@ -382,94 +386,73 @@ export class UserController {
   }
   static async updateProfile(request: NextRequest, user_id: string) {
     try {
-      const body = await request.json();
-      const { profile_image, bio, phone_number, name, email } = body;
+      const body = (await request.json()) as {
+        profile_image?: string | null;
+        profile_image_url?: string | null;
+        bio?: string | null;
+        phone_number?: string | null;
+        name?: string;
+        email?: string;
+      };
 
-     const updatedUser = await prisma.user.update({
-      where: { user_id },
-      data: {
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(phone_number !== undefined && { 
-          phone_number: phone_number ? BigInt(phone_number) : null 
-        }),
-      },
-      select: {
-        user_id: true,
-        name: true,
-        email: true,
-        role: true,
-        phone_number: true,
-        created_at: true,
-        profile: {
-          select: {
-            profile_image_url: true,
-            bio: true,
-            display_name: true,
-          }
-        }
-      }
-    });
-
-    // Handle profile update/creation
-    if (profile_image !== undefined || bio !== undefined) {
-      await prisma.user_Profile.upsert({
+      await prisma.user.update({
         where: { user_id },
-        update: {
-          ...(profile_image !== undefined && { profile_image_url: profile_image }),
-          ...(bio !== undefined && { bio }),
-          updated_at: new Date(),
+        data: {
+          ...(body.name && { name: body.name }),
+          ...(body.email && { email: body.email }),
+          ...(body.phone_number !== undefined && {
+            phone_number: body.phone_number ? BigInt(body.phone_number) : null,
+          }),
         },
-        create: {
-          user_id,
-          display_name: BigInt(Date.now()),
-          profile_image_url: profile_image|| null,
-          bio: bio || null,
-          updated_at: new Date(),
-        }
+        select: { user_id: true },
       });
-    }
 
-    const finalUser = await prisma.user.findUnique({
-      where: { user_id },
-      select: {
-        user_id: true,
-        name: true,
-        email: true,
-        role: true,
-        phone_number: true,
-        created_at: true,
-        profile: {
-          select: {
-            profile_image_url: true,
-            bio: true,
-            display_name: true,
-          }
-        }
+      const profileImg = body.profile_image_url ?? body.profile_image;
+      if (profileImg !== undefined || body.bio !== undefined) {
+        await prisma.user_Profile.upsert({
+          where: { user_id },
+          update: {
+            ...(profileImg !== undefined && { profile_image_url: profileImg }),
+            ...(body.bio !== undefined && { bio: body.bio }),
+            updated_at: new Date(),
+          },
+          create: {
+            user_id,
+            display_name: BigInt(Date.now()),
+            profile_image_url: profileImg || null,
+            bio: body.bio || null,
+            updated_at: new Date(),
+          },
+        });
       }
-    });
 
-    const serializedUser = {
-     ...finalUser,
-      phone_number: finalUser?.phone_number ? finalUser.phone_number.toString() : null,
-      phone: finalUser?.phone_number ? finalUser.phone_number.toString() : null, 
-      profile_image: finalUser?.profile?.profile_image_url || null, 
-      bio: finalUser?.profile?.bio || null,
-      profile: finalUser?.profile ? {
-        ...finalUser.profile,
-        display_name: finalUser.profile.display_name ? finalUser.profile.display_name.toString() : null,
-  } : null, };
+      const finalUser = await prisma.user.findUnique({
+        where: { user_id },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          role: true,
+          phone_number: true,
+          created_at: true,
+          profile: {
+            select: {
+              profile_image_url: true,
+              bio: true,
+              display_name: true,
+            },
+          },
+        },
+      });
 
-    return NextResponse.json({ 
-      message: 'Profile updated successfully',
-      user: serializedUser 
-    });
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+      if (!finalUser) {
+        return NextResponse.json({ error: 'User not found after profile update' }, { status: 404 });
+      }
+
+      return NextResponse.json({ message: 'Profile updated successfully', user: serializeUser(finalUser as UserWithProfile) });
+    } catch (error: unknown) {
+      console.error('Error updating profile:', error);
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    }
   }
-}
 }

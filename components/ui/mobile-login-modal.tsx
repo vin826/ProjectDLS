@@ -6,7 +6,7 @@ import { X, Eye, EyeOff, Mail, Lock } from "lucide-react";
 interface MobileLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (user: { user_id: string; name: string; email: string; role: 'ADMIN' | 'USER'; profile_image?: string; phone?: string; bio?: string; }) => void;
+  onLoginSuccess: (user: { user_id: string; name: string; email: string; role: 'ADMIN' | 'USER'; profile_image?: string; phone?: string; bio?: string; dark_league_points?: number; }) => void;
 }
 
 export default function MobileLoginModal({ isOpen, onClose, onLoginSuccess }: MobileLoginModalProps) {
@@ -44,7 +44,8 @@ export default function MobileLoginModal({ isOpen, onClose, onLoginSuccess }: Mo
           role: data.user.role,
           profile_image: data.user.profile_image,
           phone: data.user.phone,
-          bio: data.user.bio
+          bio: data.user.bio,
+          dark_league_points: 0 // Will be fetched in handleLoginSuccess
         });
         setEmail("");
         setPassword("");

@@ -14,6 +14,7 @@ interface User{
   phone?: string;
   phone_number?: string;
   bio?: string;
+  dark_league_points?: number;
 }
 
 interface ProfileModalProps {

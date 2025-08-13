@@ -19,6 +19,13 @@ export const metadata: Metadata = {
   description: "A beautiful carousel application",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 /*export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,8 +49,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="overflow-x-hidden">
+      <body className={`${inter.className} overflow-x-hidden`}>
         <DataProvider>
           {children}
         </DataProvider>

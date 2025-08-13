@@ -3,123 +3,187 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+  SWISS_SYSTEM
+  KING_OF_THE_HILL
+  LADDER
+  GAUNTLET
+  SURVIVAL
+  BEST_OF_SERIES
+}
+
+enum MatchStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
-  user_id        String                 @id @default(uuid())
-  name           String
-  email          String                 @unique
-  password_hash  String
-  role           Role
-  phone_number   BigInt?
-  created_at     DateTime
-  profile        User_Profile?
-  balances       UserCurrencyBalances[]
-  transactions   Transactions[]
-  registrations  TournamentRegistrations[]
-  created_cards  Card[]  // Add this line if you want the relation
+  email             String                    @unique
+  name              String
+  created_at        DateTime
+  password_hash     String
+  phone_number      BigInt?
+  role              Role
+  user_id           String                    @id @default(uuid())
+  registrations     TournamentRegistrations[]
+  transactions      Transactions[]
+  balances          UserCurrencyBalances[]
+  profile           User_Profile?
+  created_cards     Card[]
+  tournament_results TournamentResults[]
+  player1_matches   TournamentBrackets[]      @relation("Player1Matches")
+  player2_matches   TournamentBrackets[]      @relation("Player2Matches")
+  winner_matches    TournamentBrackets[]      @relation("WinnerMatches")
 }
 
 model User_Profile {
-  user_id         String   @id
-  display_name    BigInt
-  bio             String?
+  user_id           String   @id
+  display_name      BigInt
+  bio               String?
   profile_image_url String?
-  social_links    Json?
-  updated_at      DateTime
-  user            User     @relation(fields: [user_id], references: [user_id])
+  social_links      Json?
+  updated_at        DateTime
+  user              User     @relation(fields: [user_id], references: [user_id])
 }
 
 model Currencies {
-  currency_id  String    @id @default(uuid())
-  name         String
-  symbol       String
-  exchange_rate Decimal
-  created_at   DateTime
-  updated_at   DateTime
-  balances     UserCurrencyBalances[]
-  transactions Transactions[]
-  tournaments  Tournaments[]
+  currency_id       String                 @id @default(uuid())
+  name              String
+  symbol            String
+  exchange_rate     Decimal
+  created_at        DateTime
+  updated_at        DateTime
+  tournaments       Tournaments[]
+  transactions      Transactions[]
+  balances          UserCurrencyBalances[]
+  tournament_prizes TournamentResults[]    @relation("TournamentPrizes")
 }
 
 model UserCurrencyBalances {
-  balance_id   String    @id @default(uuid())
-  user_id      String
-  currency_id  String
-  amount       Decimal
-  updated_at   DateTime
-  created_at   DateTime
-
-  user         User       @relation(fields: [user_id], references: [user_id])
-  currency     Currencies @relation(fields: [currency_id], references: [currency_id])
+  balance_id  String     @id @default(uuid())
+  user_id     String
+  currency_id String
+  amount      Decimal
+  updated_at  DateTime
+  created_at  DateTime
+  currency    Currencies @relation(fields: [currency_id], references: [currency_id])
+  user        User       @relation(fields: [user_id], references: [user_id])
 }
 
 model Transactions {
-  transaction_id      String    @id @default(uuid())
-  user_id             String
-  currency_id         String
-  type                TransactionType
-  amount              Decimal
-  real_money_amount   Decimal?
-  status              TransactionStatus
-  description         String?
-  related_entity_id   String?
-  created_at          DateTime
-
-  user                User       @relation(fields: [user_id], references: [user_id])
-  currency            Currencies @relation(fields: [currency_id], references: [currency_id])
-  registration        TournamentRegistrations? @relation("PaymentTransaction")
+  transaction_id    String                   @id @default(uuid())
+  user_id           String
+  currency_id       String
+  type              TransactionType
+  amount            Decimal
+  real_money_amount Decimal?
+  status            TransactionStatus
+  description       String?
+  related_entity_id String?
+  created_at        DateTime
+  registration      TournamentRegistrations? @relation("PaymentTransaction")
+  currency          Currencies               @relation(fields: [currency_id], references: [currency_id])
+  user              User                     @relation(fields: [user_id], references: [user_id])
 }
 
 model Tournaments {
-  tournament_id       String    @id @default(uuid())
-  name                String
-  description         String?
-  start_date          DateTime
-  end_date            DateTime
+  tournament_id         String                    @id @default(uuid())
+  name                  String
+  description           String?
+  format                TournamentFormat          @default(SINGLE_ELIMINATION)
+  start_date            DateTime
+  end_date              DateTime
   entry_fee_currency_id String
-  entry_fee_amount    Decimal
-  max_participants    Int
-  status              TournamentStatus
-  created_by          String
-  created_at          DateTime
-  updated_at          DateTime
+  entry_fee_amount      Decimal
+  max_participants      Int
+  status                TournamentStatus
+  created_by            String
+  created_at            DateTime
+  updated_at            DateTime
+  card_id               Int?
+  registrations         TournamentRegistrations[]
+  results               TournamentResults[]
+  brackets              TournamentBrackets[]
+  currency              Currencies                @relation(fields: [entry_fee_currency_id], references: [currency_id])
+  card                  Card?                     @relation(fields: [card_id], references: [card_id])
+}
 
-  currency            Currencies @relation(fields: [entry_fee_currency_id], references: [currency_id])
-  registrations       TournamentRegistrations[]
+model TournamentResults {
+  result_id         String      @id @default(uuid())
+  tournament_id     String
+  user_id           String
+  placement         Int
+  prize_amount      Decimal?
+  prize_currency_id String?
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
+  tournament        Tournaments @relation(fields: [tournament_id], references: [tournament_id])
+  user              User        @relation(fields: [user_id], references: [user_id])
+  prize_currency    Currencies? @relation("TournamentPrizes", fields: [prize_currency_id], references: [currency_id])
+
+  @@unique([tournament_id, user_id])
+}
+
+model TournamentBrackets {
+  bracket_id      String       @id @default(uuid())
+  tournament_id   String
+  round_number    Int
+  match_number    Int
+  player1_id      String?
+  player2_id      String?
+  winner_id       String?
+  player1_score   Int          @default(0)
+  player2_score   Int          @default(0)
+  status          MatchStatus  @default(PENDING)
+  scheduled_time  DateTime?
+  completed_time  DateTime?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+  tournament      Tournaments  @relation(fields: [tournament_id], references: [tournament_id])
+  player1         User?        @relation("Player1Matches", fields: [player1_id], references: [user_id])
+  player2         User?        @relation("Player2Matches", fields: [player2_id], references: [user_id])
+  winner          User?        @relation("WinnerMatches", fields: [winner_id], references: [user_id])
+
+  @@index([tournament_id, round_number])
 }
 
 model TournamentRegistrations {
-  registration_id       String    @id @default(uuid())
-  user_id               String
-  tournament_id         String
-  payment_transaction_id String? @unique
-  registration_date     DateTime
-  status                RegistrationStatus
-  created_at            DateTime
-  updated_at            DateTime
-
-  user                  User       @relation(fields: [user_id], references: [user_id])
-  tournament            Tournaments @relation(fields: [tournament_id], references: [tournament_id])
-  payment_transaction   Transactions? @relation("PaymentTransaction", fields: [payment_transaction_id], references: [transaction_id])
+  registration_id        String             @id @default(uuid())
+  user_id                String
+  tournament_id          String
+  payment_transaction_id String?            @unique
+  registration_date      DateTime
+  status                 RegistrationStatus
+  created_at             DateTime
+  updated_at             DateTime
+  payment_transaction    Transactions?      @relation("PaymentTransaction", fields: [payment_transaction_id], references: [transaction_id])
+  tournament             Tournaments        @relation(fields: [tournament_id], references: [tournament_id])
+  user                   User               @relation(fields: [user_id], references: [user_id])
 }
 
 model Card {
-  card_id          Int      @id @default(autoincrement())
+  card_id     Int           @id @default(autoincrement())
   category    String
   title       String
-  src         String   // This replaces image_url
-  content     String   // This replaces description
+  src         String
+  content     String
+  created_by  String?
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  button_link String?
   button_text String?
-  button_link String?   
-  created_by  String?  // Optional: track who created it
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  
-  creator     User?    @relation(fields: [created_by], references: [user_id])
+  creator     User?         @relation(fields: [created_by], references: [user_id])
+  tournaments Tournaments[]
 
   @@map("cards")
 }
